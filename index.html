@@ -137,6 +137,21 @@
       padding: 80px 24px;
     }
 
+    .hero-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .hero-logo {
+      height: 64px;
+      width: auto;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.35);
+    }
+
     .hero-tag {
       display: inline-block;
       font-size: .78rem;
@@ -829,7 +844,10 @@
 <section id="hero">
   <!-- Wstaw zdjęcie tła: hero-bg.jpg (np. wnętrze warsztatu lub gotowe meble) -->
   <div class="hero-content">
-    <span class="hero-tag">✦ Rękodzieło z pasji</span>
+    <div class="hero-tag-row">
+      <img src="logo.png" alt="Artwood Koncept" class="hero-logo" />
+      <span class="hero-tag">✦ Rękodzieło z pasji</span>
+    </div>
     <h1>Meble i&nbsp;wyroby z&nbsp;drewna na wymiar</h1>
     <p>Tworzymy unikatowe przedmioty z&nbsp;drewna — od projektu po wykończenie. Każda realizacja to połączenie rzemiosła, materiału i&nbsp;indywidualnego charakteru.</p>
     <div class="btn-group">
