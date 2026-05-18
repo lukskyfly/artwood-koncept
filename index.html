@@ -78,7 +78,8 @@
     nav ul {
       list-style: none;
       display: flex;
-      gap: 32px;
+      gap: 20px;
+      align-items: center;
     }
 
     nav a {
@@ -100,6 +101,21 @@
       transition: background var(--transition) !important;
     }
     .nav-cta:hover { background: var(--brown-warm) !important; color: var(--white) !important; }
+
+    .nav-instagram {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--brown-warm) !important;
+      font-weight: 600 !important;
+    }
+    .nav-instagram::before {
+      content: '';
+      display: inline-block;
+      width: 16px; height: 16px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A0622A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='2' width='20' height='20' rx='5' ry='5'/%3E%3Cpath d='M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z'/%3E%3Cline x1='17.5' y1='6.5' x2='17.51' y2='6.5'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+    .nav-instagram:hover { color: var(--brown-dark) !important; }
 
     /* hamburger */
     .hamburger {
@@ -832,9 +848,11 @@
     <nav id="main-nav">
       <ul>
         <li><a href="#o-nas">O nas</a></li>
-        <li><a href="#oferta">Oferta</a></li>
-        <li><a href="#realizacje">Realizacje</a></li>
-        <li><a href="#kontakt" class="nav-cta">Kontakt</a></li>
+        <li><a href="#realizacje">Galeria</a></li>
+        <li><a href="#wspolpraca">Współpraca</a></li>
+        <li><a href="#oferta">Produkty na wymiar</a></li>
+        <li><a href="#kontakt">Kontakt</a></li>
+        <li><a href="https://www.instagram.com/" target="_blank" class="nav-instagram">Instagram</a></li>
       </ul>
     </nav>
     <button class="hamburger" id="hamburger" aria-label="Menu">
