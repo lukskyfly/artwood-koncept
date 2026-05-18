@@ -43,7 +43,15 @@
       z-index: 100;
       background: rgba(255,255,255,.96);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
+    }
+    /* Na mobile backdrop-filter tworzy stacking context → menu nie nakrywa hero */
+    @media (max-width: 600px) {
+      header {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
     }
 
     .header-inner {
@@ -817,21 +825,30 @@
         display: flex;
         flex-direction: column;
         position: fixed;
-        inset: 72px 0 0;
+        top: 72px; left: 0; right: 0; bottom: 0;
         background: #FFFFFF;
-        padding: 32px 24px;
-        gap: 24px;
-        z-index: 200;
+        padding: 28px 24px;
+        gap: 0;
+        z-index: 9999;
         overflow-y: auto;
       }
       nav.open a {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         color: var(--brown-dark) !important;
-        padding: 8px 0;
+        padding: 16px 0;
         border-bottom: 1px solid var(--border);
         display: block;
       }
+      nav.open li:last-child a { border-bottom: none; }
       .hamburger { display: flex; }
+
+      /* Tekst hero na dole — poniżej strefy menu */
+      #hero {
+        align-items: flex-end;
+      }
+      .hero-content {
+        padding-bottom: 60px;
+      }
 
       .offer-grid,
       .why-grid,
