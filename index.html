@@ -818,12 +818,19 @@
         flex-direction: column;
         position: fixed;
         inset: 72px 0 0;
-        background: var(--white);
+        background: #FFFFFF;
         padding: 32px 24px;
         gap: 24px;
-        z-index: 99;
+        z-index: 200;
+        overflow-y: auto;
       }
-      nav.open a { font-size: 1.1rem; }
+      nav.open a {
+        font-size: 1.2rem;
+        color: var(--brown-dark) !important;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        display: block;
+      }
       .hamburger { display: flex; }
 
       .offer-grid,
