@@ -65,7 +65,7 @@
     }
 
     .logo img {
-      height: 56px;
+      height: 72px;
       width: auto;
       object-fit: contain;
       border-radius: 4px;
@@ -98,8 +98,22 @@
       letter-spacing: .06em;
       text-transform: uppercase;
       transition: color var(--transition);
+      position: relative;
+      padding-bottom: 3px;
+    }
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 2px;
+      background: var(--brown-warm);
+      border-radius: 2px;
+      transition: width var(--transition);
     }
     nav a:hover { color: var(--brown-warm); }
+    nav a:hover::after,
+    nav a.active::after { width: 100%; }
+    nav a.active { color: var(--brown-dark); font-weight: 600; }
 
     .nav-cta {
       background: var(--brown-dark);
@@ -940,7 +954,7 @@
             <div class="feat-icon">🪵</div>
             <div class="feat-text">
               <strong>Sprawdzone materiały</strong>
-              <span>Tylko sprawdzone drewno i wykończenia</span>
+              <span>Tylko sprawdzone materiały i wykończenia</span>
             </div>
           </div>
           <div class="feat">
@@ -1304,6 +1318,20 @@
   const ham = document.getElementById('hamburger');
   const nav = document.getElementById('main-nav');
   ham.addEventListener('click', () => nav.classList.toggle('open'));
+
+  // scroll-spy — aktywny link w menu
+  const sections = document.querySelectorAll('section[id], #hero');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const spyObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.35 });
+  sections.forEach(s => spyObserver.observe(s));
 
   // header shadow on scroll
   const header = document.querySelector('header');
