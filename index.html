@@ -1182,8 +1182,14 @@
           </div>
         </div>
         <!-- Mapa lub zdjęcie lokalizacji -->
-        <div style="margin-top:16px; background:var(--cream); border:1px solid var(--border); border-radius:4px; height:180px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:.85rem;">
-          🗺️ Tu możesz osadzić mapę Google Maps (iframe)
+        <div style="margin-top:16px; border-radius:4px; overflow:hidden; border:1px solid var(--border);">
+          <iframe
+            src="https://maps.google.com/maps?q=Piechoty+Wybranieckiej+7&output=embed&hl=pl&z=15"
+            width="100%" height="200"
+            style="border:0; display:block;"
+            allowfullscreen="" loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
         </div>
       </div>
 
