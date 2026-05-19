@@ -1,3 +1,49 @@
+<?php
+// Obsługa formularza kontaktowego
+$formSent = false;
+$formError = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
+    $name    = trim(strip_tags($_POST['name'] ?? ''));
+    $phone   = trim(strip_tags($_POST['phone'] ?? ''));
+    $email   = trim(strip_tags($_POST['email'] ?? ''));
+    $type    = trim(strip_tags($_POST['type'] ?? ''));
+    $message = trim(strip_tags($_POST['message'] ?? ''));
+    if ($name && $email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $to      = 'ivanbabaev.artwood@gmail.com';
+        $subject = '=?UTF-8?B?' . base64_encode('Zapytanie o wycenę — Artwood Koncept') . '?=';
+        $body    = "Nowe zapytanie z formularza na artwoodkoncept.pl\n" . str_repeat("-", 48) . "\nImię i nazwisko: $name\nTelefon: $phone\nE-mail: $email\nRodzaj realizacji: $type\n\nOpis projektu:\n$message\n" . str_repeat("-", 48) . "\nWiadomość wysłana przez formularz kontaktowy\nartwoodkoncept.pl";
+        $headers = "From: formularz@artwoodkoncept.pl\r\nReply-To: $email\r\nContent-Type: text/plain; charset=UTF-8";
+        $formSent = mail($to, $subject, $body, $headers);
+        if (!$formSent) $formError = true;
+    } else {
+        $formError = true;
+    }
+}
+
+function getRealizacje($dir) {
+    $all = glob($dir . '/realizacja*.{jpg,jpeg,png,webp,gif}', GLOB_BRACE) ?: [];
+    $groups = [];
+    foreach ($all as $path) {
+        $f = basename($path);
+        if (preg_match('/^realizacja(\d+)_(\d+)\./i', $f, $m)) {
+            $groups[(int)$m[1]][] = ['file' => $f, 'idx' => (int)$m[2]];
+        } elseif (preg_match('/^realizacja(\d+)\.[a-z]+$/i', $f, $m)) {
+            $groups[(int)$m[1]][] = ['file' => $f, 'idx' => 1];
+        }
+    }
+    foreach ($groups as &$photos) usort($photos, fn($a,$b) => $a['idx'] - $b['idx']);
+    ksort($groups);
+    return $groups;
+}
+function getCovers($dir) {
+    $f = $dir . '/realizacje.json';
+    return file_exists($f) ? (json_decode(file_get_contents($f), true)['covers'] ?? []) : [];
+}
+$realizacje = getRealizacje(__DIR__);
+$covers     = getCovers(__DIR__);
+$lbData = [];
+foreach ($realizacje as $num => $photos) $lbData[$num] = array_column($photos, 'file');
+?>
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -781,6 +827,19 @@
     .reveal-delay-3 { transition-delay: .3s; }
     .reveal-delay-4 { transition-delay: .4s; }
 
+    /* ─── LIGHTBOX ─── */
+    #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column}
+    #lightbox.open{display:flex}
+    #lb-img{max-width:90vw;max-height:80vh;object-fit:contain;border-radius:4px;box-shadow:0 8px 48px rgba(0,0,0,.5)}
+    .lb-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;font-size:2.5rem;width:56px;height:56px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;line-height:1}
+    .lb-btn:hover{background:rgba(255,255,255,.3)}
+    .lb-prev{left:16px}
+    .lb-next{right:16px}
+    .lb-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:1.4rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+    .lb-close:hover{background:rgba(255,255,255,.3)}
+    #lb-counter{color:rgba(255,255,255,.7);font-size:.9rem;margin-top:12px;letter-spacing:.06em}
+    .photo-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;font-size:.75rem;padding:3px 8px;border-radius:12px;backdrop-filter:blur(4px)}
+
     /* ─── FLOATING CTA ─── */
     .float-cta {
       position: fixed;
@@ -814,6 +873,34 @@
       50% { transform: scale(1.6); opacity: .6; }
     }
 
+    /* ─── WSPÓŁPRACA ─── */
+    #wspolpraca { background: var(--cream); }
+    .partners-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 32px;
+      margin-top: 48px;
+    }
+    .partner-item {
+      width: 140px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: grayscale(100%) opacity(.55);
+      transition: filter .3s;
+    }
+    .partner-item:hover { filter: grayscale(0%) opacity(1); }
+    .partner-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .partners-empty {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .9rem;
+      padding: 32px 0;
+    }
+
     /* ─── MOBILE ─── */
     @media (max-width: 900px) {
       .offer-grid,
@@ -823,7 +910,9 @@
       .about-grid,
       .contact-grid { grid-template-columns: 1fr; }
 
-      .about-img { display: none; }
+      .about-img { display: block; max-height: 320px; }
+      .about-img img { aspect-ratio: 16/9; }
+      .about-img::after { display: none; }
 
       .footer-top { grid-template-columns: 1fr 1fr; }
       .footer-brand { grid-column: 1/-1; }
@@ -938,8 +1027,17 @@
   <div class="container">
     <div class="about-grid">
       <div class="about-img">
-        <!-- Wstaw zdjęcie warsztatu lub rzemieślnika przy pracy -->
-        <div class="about-img-placeholder">📷 Zdjęcie warsztatu / rzemieślnika</div>
+        <?php
+          $onas = null;
+          foreach(['jpg','jpeg','png','webp','gif'] as $e) {
+            if(file_exists(__DIR__."/onas.$e")){ $onas="onas.$e"; break; }
+          }
+        ?>
+        <?php if($onas): ?>
+          <img src="<?=htmlspecialchars($onas)?>?t=<?=filemtime(__DIR__.'/'.$onas)?>" alt="O nas — Artwood Koncept">
+        <?php else: ?>
+          <div class="about-img-placeholder">📷 Zdjęcie warsztatu / rzemieślnika</div>
+        <?php endif ?>
       </div>
       <div class="about-text">
         <span class="section-tag">O nas</span>
@@ -1034,54 +1132,18 @@
     <h2 class="section-title">Wybrane projekty</h2>
     <p class="section-lead">Każda realizacja to indywidualna historia. Poniżej kilka przykładów — wkrótce więcej.</p>
     <div class="gallery-grid">
-      <div class="gallery-item">
-        <img src="realizacja1.jpg" alt="Realizacja 1" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="gallery-placeholder" style="display:none">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Realizacja 1
+      <?php if (empty($realizacje)): ?>
+        <p style="color:var(--text-muted);grid-column:1/-1">Wkrótce — dodaj zdjęcia przez panel admina.</p>
+      <?php else: foreach ($realizacje as $num => $photos):
+        $cover = $covers[$num] ?? $photos[0]['file'];
+        $count = count($photos);
+      ?>
+        <div class="gallery-item" onclick="openLb(<?=$num?>, 0)" style="cursor:pointer">
+          <img src="<?=htmlspecialchars($cover)?>?t=<?=filemtime(__DIR__.'/'.$cover)?>" alt="Realizacja <?=$num?>">
+          <?php if ($count > 1): ?><span class="photo-badge">📷 <?=$count?></span><?php endif ?>
+          <div class="gallery-overlay"><span>Realizacja <?=$num?></span></div>
         </div>
-        <div class="gallery-overlay"><span>Realizacja 1</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="realizacja2.jpg" alt="Realizacja 2" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="gallery-placeholder" style="display:none">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Realizacja 2
-        </div>
-        <div class="gallery-overlay"><span>Realizacja 2</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="realizacja3.jpg" alt="Realizacja 3" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="gallery-placeholder" style="display:none">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Realizacja 3
-        </div>
-        <div class="gallery-overlay"><span>Realizacja 3</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="realizacja4.jpg" alt="Realizacja 4" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="gallery-placeholder" style="display:none">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Realizacja 4
-        </div>
-        <div class="gallery-overlay"><span>Realizacja 4</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="realizacja5.jpg" alt="Realizacja 5" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="gallery-placeholder" style="display:none">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Realizacja 5
-        </div>
-        <div class="gallery-overlay"><span>Realizacja 5</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="realizacja6.jpg" alt="Realizacja 6" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="gallery-placeholder" style="display:none">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Realizacja 6
-        </div>
-        <div class="gallery-overlay"><span>Realizacja 6</span></div>
-      </div>
+      <?php endforeach; endif; ?>
     </div>
     <div class="gallery-cta">
       <a href="#kontakt" class="btn btn-dark">Zapytaj o swój projekt</a>
@@ -1151,6 +1213,33 @@
   </div>
 </section>
 
+<!-- WSPÓŁPRACA -->
+<section id="wspolpraca">
+  <div class="container">
+    <span class="section-tag">Współpraca</span>
+    <h2 class="section-title">Producenci i dostawcy materiałów</h2>
+    <?php
+      $partners = [];
+      foreach (glob(__DIR__ . '/partner*.{jpg,jpeg,png,webp,gif,svg}', GLOB_BRACE) ?: [] as $p) {
+        $f = basename($p);
+        if (preg_match('/^partner(\d+)\./i', $f, $m)) $partners[(int)$m[1]] = $f;
+      }
+      ksort($partners);
+    ?>
+    <?php if (empty($partners)): ?>
+      <p class="partners-empty">Logotypy partnerów pojawią się tutaj.</p>
+    <?php else: ?>
+      <div class="partners-grid">
+        <?php foreach ($partners as $f): ?>
+          <div class="partner-item">
+            <img src="<?=htmlspecialchars($f)?>?t=<?=filemtime(__DIR__.'/'.$f)?>" alt="Partner Artwood Koncept">
+          </div>
+        <?php endforeach ?>
+      </div>
+    <?php endif ?>
+  </div>
+</section>
+
 <!-- KONTAKT -->
 <section id="kontakt">
   <div class="container">
@@ -1202,20 +1291,32 @@
 
       <div class="contact-form">
         <h3>Bezpłatna wycena</h3>
-        <form>
+        <?php if ($formSent): ?>
+          <div style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:6px;padding:24px;text-align:center;color:#1e8449">
+            <strong style="font-size:1.1rem">✓ Wiadomość wysłana!</strong><br>
+            <span style="font-size:.9rem">Odezwiemy się wkrótce.</span>
+          </div>
+        <?php else: ?>
+        <?php if ($formError): ?>
+          <div style="background:#fdf3f3;border:1px solid #f1a9a9;border-radius:6px;padding:12px 16px;margin-bottom:16px;color:#c0392b;font-size:.88rem">
+            Uzupełnij imię i poprawny adres e-mail.
+          </div>
+        <?php endif ?>
+        <form method="post" action="#kontakt">
+          <input type="hidden" name="contact_submit" value="1">
           <div class="form-row">
             <div class="form-group">
               <label for="name">Imię i nazwisko</label>
-              <input type="text" id="name" name="name" placeholder="Jan Kowalski" />
+              <input type="text" id="name" name="name" placeholder="Jan Kowalski" value="<?=htmlspecialchars($_POST['name']??'')?>" required />
             </div>
             <div class="form-group">
               <label for="phone">Telefon</label>
-              <input type="tel" id="phone" name="phone" placeholder="+48 000 000 000" />
+              <input type="tel" id="phone" name="phone" placeholder="+48 000 000 000" value="<?=htmlspecialchars($_POST['phone']??'')?>" />
             </div>
           </div>
           <div class="form-group">
             <label for="email">E-mail</label>
-            <input type="email" id="email" name="email" placeholder="jan@example.com" />
+            <input type="email" id="email" name="email" placeholder="jan@example.com" value="<?=htmlspecialchars($_POST['email']??'')?>" required />
           </div>
           <div class="form-group">
             <label for="type">Rodzaj realizacji</label>
@@ -1232,10 +1333,11 @@
           </div>
           <div class="form-group">
             <label for="message">Opis projektu</label>
-            <textarea id="message" name="message" placeholder="Opisz swoje potrzeby — wymiary, rodzaj drewna, styl..."></textarea>
+            <textarea id="message" name="message" placeholder="Opisz swoje potrzeby — wymiary, rodzaj drewna, styl..."><?=htmlspecialchars($_POST['message']??'')?></textarea>
           </div>
           <button type="submit" class="btn-submit">Wyślij zapytanie →</button>
         </form>
+        <?php endif ?>
       </div>
     </div>
   </div>
@@ -1261,6 +1363,7 @@
           <li><a href="#o-nas">O nas</a></li>
           <li><a href="#oferta">Oferta</a></li>
           <li><a href="#realizacje">Realizacje</a></li>
+          <li><a href="#wspolpraca">Współpraca</a></li>
           <li><a href="#kontakt">Kontakt</a></li>
         </ul>
       </div>
@@ -1281,7 +1384,25 @@
   </div>
 </footer>
 
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button class="lb-close" onclick="closeLb()">✕</button>
+  <button class="lb-btn lb-prev" onclick="moveLb(-1)">&#8249;</button>
+  <img id="lb-img" src="" alt="">
+  <button class="lb-btn lb-next" onclick="moveLb(1)">&#8250;</button>
+  <span id="lb-counter"></span>
+</div>
+
 <script>
+const LB = <?=json_encode($lbData)?>;
+let lbNum=0, lbIdx=0;
+function openLb(num,idx){ lbNum=num; lbIdx=idx; updateLb(); document.getElementById('lightbox').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeLb(){ document.getElementById('lightbox').classList.remove('open'); document.body.style.overflow=''; }
+function moveLb(d){ const p=LB[lbNum]; lbIdx=(lbIdx+d+p.length)%p.length; updateLb(); }
+function updateLb(){ const p=LB[lbNum]; document.getElementById('lb-img').src=p[lbIdx]+'?t='+Date.now(); document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+p.length+' zdjęć'; }
+document.getElementById('lightbox').addEventListener('click',function(e){ if(e.target===this) closeLb(); });
+document.addEventListener('keydown',function(e){ if(!document.getElementById('lightbox').classList.contains('open')) return; if(e.key==='ArrowRight') moveLb(1); if(e.key==='ArrowLeft') moveLb(-1); if(e.key==='Escape') closeLb(); });
+
   // scroll reveal
   const revealEls = document.querySelectorAll('.reveal');
   const revealObserver = new IntersectionObserver((entries) => {
@@ -1331,6 +1452,9 @@
   const ham = document.getElementById('hamburger');
   const nav = document.getElementById('main-nav');
   ham.addEventListener('click', () => nav.classList.toggle('open'));
+  nav.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', () => nav.classList.remove('open'));
+  });
 
   // scroll-spy — aktywny link w menu
   const sections = document.querySelectorAll('section[id], #hero');
@@ -1352,11 +1476,6 @@
     header.style.boxShadow = window.scrollY > 10 ? '0 2px 20px rgba(44,26,14,.12)' : 'none';
   });
 
-  // form submit placeholder
-  document.querySelector('form').addEventListener('submit', e => {
-    e.preventDefault();
-    alert('Dziękujemy! Odezwiemy się wkrótce.');
-  });
 </script>
 </body>
 </html>
