@@ -823,7 +823,8 @@
       .about-grid,
       .contact-grid { grid-template-columns: 1fr; }
 
-      .about-img { display: none; }
+      .about-img { display: block; max-height: 500px; }
+      .about-img img { aspect-ratio: 3 / 4; }
 
       .footer-top { grid-template-columns: 1fr 1fr; }
       .footer-brand { grid-column: 1/-1; }
@@ -938,8 +939,7 @@
   <div class="container">
     <div class="about-grid">
       <div class="about-img">
-        <!-- Wstaw zdjęcie warsztatu lub rzemieślnika przy pracy -->
-        <div class="about-img-placeholder">📷 Zdjęcie warsztatu / rzemieślnika</div>
+        <img src="onas.jpg" alt="Właściciel pracowni Artwood Koncept">
       </div>
       <div class="about-text">
         <span class="section-tag">O nas</span>
