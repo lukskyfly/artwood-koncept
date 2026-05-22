@@ -910,8 +910,8 @@ foreach ($realizacje as $num => $photos) $lbData[$num] = array_column($photos, '
       .about-grid,
       .contact-grid { grid-template-columns: 1fr; }
 
-      .about-img { display: block; max-height: 320px; }
-      .about-img img { aspect-ratio: 16/9; }
+      .about-img { display: block; }
+      .about-img img { aspect-ratio: auto; height: auto; }
       .about-img::after { display: none; }
 
       .footer-top { grid-template-columns: 1fr 1fr; }

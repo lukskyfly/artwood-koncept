@@ -35,22 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     else $loginError = true;
 }
 
-// Upload ogólny
-$msg = '';
-if (!empty($_SESSION['admin']) && !empty($_FILES['photo']['name'])) {
-    $f = $_FILES['photo'];
-    if ($f['error'] === 0 && in_array($f['type'], ALLOWED) && $f['size'] <= MAX_SIZE) {
-        $ext  = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
-        $name = preg_replace('/[^a-z0-9_-]/i', '', pathinfo($f['name'], PATHINFO_FILENAME));
-        $dest = UPLOAD_DIR . $name . '.' . $ext;
-        move_uploaded_file($f['tmp_name'], $dest)
-            ? ($msg = "✓ Wgrano: $name.$ext")
-            : ($msg = "✗ Błąd zapisu pliku");
-    } else {
-        $msg = "✗ Niedozwolony format lub plik za duży (max 15MB, dozwolone: JPG, PNG, WebP, GIF)";
-    }
-}
-
 $slotMsg = '';
 
 // Nowa realizacja (pierwszy kafelek)
@@ -149,20 +133,6 @@ if (!empty($_SESSION['admin']) && !empty($_FILES['onas_photo']['name'])) {
     }
 }
 
-// Delete
-if (!empty($_SESSION['admin']) && isset($_POST['delete'])) {
-    $f = basename($_POST['delete']);
-    if (preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $f)) @unlink(UPLOAD_DIR . $f);
-    header('Location: admin.php'); exit;
-}
-
-// List images
-$images = [];
-if (!empty($_SESSION['admin'])) {
-    $files = glob(UPLOAD_DIR . '*.{jpg,jpeg,png,webp,gif}', GLOB_BRACE) ?: [];
-    foreach ($files as $f) $images[] = basename($f);
-    sort($images);
-}
 ?><!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -192,30 +162,11 @@ header h1 span{color:var(--gold)}
 /* UPLOAD */
 .upload-box{background:#fff;border:1px solid var(--border);border-radius:6px;padding:28px;margin-bottom:32px}
 .upload-box h2{font-size:1rem;font-weight:600;margin-bottom:16px;color:var(--brown)}
-.dropzone{border:2px dashed var(--border);border-radius:4px;padding:36px;text-align:center;cursor:pointer;transition:.2s}
-.dropzone:hover{border-color:var(--gold);background:#fffaf3}
-.dropzone input{display:none}
-.dropzone label{cursor:pointer;font-size:.9rem;color:#7A6252}
-.dropzone label strong{color:var(--brown);text-decoration:underline}
-.btn-upload{margin-top:14px;background:var(--gold);color:var(--brown);border:none;padding:10px 28px;border-radius:4px;font-size:.9rem;font-weight:700;cursor:pointer}
-.btn-upload:hover{background:#b07e2a}
 .msg{margin-top:12px;padding:10px 14px;border-radius:4px;font-size:.88rem;font-weight:500}
 .msg.ok{background:#eafaf1;color:var(--green);border:1px solid #a9dfbf}
 .msg.err{background:#fdf3f3;color:var(--red);border:1px solid #f1a9a9}
 
-/* GALLERY */
-.gallery-header{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
-.gallery-header h2{font-size:1rem;font-weight:600}
-.count{font-size:.82rem;color:#7A6252}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
-.thumb{background:#fff;border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.thumb img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
-.thumb-info{padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.thumb-name{font-size:.75rem;color:#7A6252;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.btn-del{background:none;border:none;color:#c0392b;cursor:pointer;font-size:1rem;padding:2px;line-height:1;flex-shrink:0}
-.btn-del:hover{color:#96170b}
 .empty{color:#7A6252;font-size:.9rem;padding:24px 0}
-#file-label-text{margin-top:8px;font-size:.82rem;color:var(--brown)}
 .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:8px}
 .slot-card{background:var(--cream);border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .slot-preview{aspect-ratio:4/3;background:#e8e0d5;display:flex;align-items:center;justify-content:center}
@@ -401,53 +352,8 @@ header h1 span{color:var(--gold)}
     <?php endif ?>
   </div>
 
-  <!-- UPLOAD OGÓLNY -->
-  <div class="upload-box">
-    <h2>Wgraj inne zdjęcie</h2>
-    <form method="post" enctype="multipart/form-data" id="uploadForm">
-      <div class="dropzone" onclick="document.getElementById('photoInput').click()">
-        <input type="file" name="photo" id="photoInput" accept="image/*" onchange="showName(this)">
-        <label>Kliknij lub przeciągnij zdjęcie tutaj<br><strong>JPG, PNG, WebP, GIF</strong> — max 15 MB</label>
-        <div id="file-label-text"></div>
-      </div>
-      <button type="submit" class="btn-upload">Wgraj →</button>
-    </form>
-    <?php if ($msg): ?>
-      <div class="msg <?= strpos($msg,'✓')===0 ? 'ok' : 'err' ?>"><?= htmlspecialchars($msg) ?></div>
-    <?php endif ?>
-  </div>
-
-  <!-- GALERIA -->
-  <div class="gallery-header">
-    <h2>Zdjęcia na serwerze</h2>
-    <span class="count"><?= count($images) ?> plików</span>
-  </div>
-  <?php if (empty($images)): ?>
-    <p class="empty">Brak zdjęć — wgraj pierwsze powyżej.</p>
-  <?php else: ?>
-  <div class="grid">
-    <?php foreach ($images as $img): ?>
-    <div class="thumb">
-      <img src="<?= htmlspecialchars($img) ?>?t=<?= filemtime(UPLOAD_DIR.$img) ?>" alt="">
-      <div class="thumb-info">
-        <span class="thumb-name" title="<?= htmlspecialchars($img) ?>"><?= htmlspecialchars($img) ?></span>
-        <form method="post" onsubmit="return confirm('Usunąć <?= htmlspecialchars($img) ?>?')">
-          <input type="hidden" name="delete" value="<?= htmlspecialchars($img) ?>">
-          <button class="btn-del" title="Usuń">🗑</button>
-        </form>
-      </div>
-    </div>
-    <?php endforeach ?>
-  </div>
-  <?php endif ?>
 </div>
 <?php endif ?>
 
-<script>
-function showName(input) {
-  document.getElementById('file-label-text').textContent =
-    input.files[0] ? '📎 ' + input.files[0].name : '';
-}
-</script>
 </body>
 </html>
